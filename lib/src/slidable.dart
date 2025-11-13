@@ -28,6 +28,7 @@ class Slidable extends StatefulWidget {
     this.direction = Axis.horizontal,
     this.dragStartBehavior = DragStartBehavior.down,
     this.useTextDirection = true,
+    this.shouldClipActions = true,
     required this.child,
   });
 
@@ -105,6 +106,8 @@ class Slidable extends StatefulWidget {
   /// {@macro flutter.widgets.ProxyWidget.child}
   final Widget child;
 
+  final bool shouldClipActions;
+
   @override
   _SlidableState createState() => _SlidableState();
 
@@ -119,9 +122,13 @@ class Slidable extends StatefulWidget {
   /// ```
   /// {@end-tool}
   static SlidableController? of(BuildContext context) {
-    final scope = context
-        .getElementForInheritedWidgetOfExactType<_SlidableControllerScope>()
-        ?.widget as _SlidableControllerScope?;
+    final scope =
+        context
+                .getElementForInheritedWidgetOfExactType<
+                  _SlidableControllerScope
+                >()
+                ?.widget
+            as _SlidableControllerScope?;
     return scope?.controller;
   }
 }
@@ -138,8 +145,9 @@ class _SlidableState extends State<Slidable>
   @override
   void initState() {
     super.initState();
-    controller = (widget.controller ?? SlidableController(this))
-      ..actionPaneType.addListener(handleActionPanelTypeChanged);
+    controller =
+        (widget.controller ?? SlidableController(this))
+          ..actionPaneType.addListener(handleActionPanelTypeChanged);
   }
 
   @override
@@ -157,8 +165,9 @@ class _SlidableState extends State<Slidable>
     if (oldWidget.controller != widget.controller) {
       controller.actionPaneType.removeListener(handleActionPanelTypeChanged);
 
-      controller = (widget.controller ?? SlidableController(this))
-        ..actionPaneType.addListener(handleActionPanelTypeChanged);
+      controller =
+          (widget.controller ?? SlidableController(this))
+            ..actionPaneType.addListener(handleActionPanelTypeChanged);
     }
 
     updateIsLeftToRight();
@@ -187,7 +196,8 @@ class _SlidableState extends State<Slidable>
 
   void updateIsLeftToRight() {
     final textDirection = Directionality.of(context);
-    controller.isLeftToRight = widget.direction == Axis.vertical ||
+    controller.isLeftToRight =
+        widget.direction == Axis.vertical ||
         !widget.useTextDirection ||
         textDirection == TextDirection.ltr;
   }
@@ -209,9 +219,10 @@ class _SlidableState extends State<Slidable>
     moveAnimation = controller.animation.drive(
       Tween<Offset>(
         begin: Offset.zero,
-        end: widget.direction == Axis.horizontal
-            ? Offset(end, 0)
-            : Offset(0, end),
+        end:
+            widget.direction == Axis.horizontal
+                ? Offset(end, 0)
+                : Offset(0, end),
       ),
     );
   }
@@ -255,7 +266,7 @@ class _SlidableState extends State<Slidable>
 
     content = Stack(
       children: <Widget>[
-        if (actionPane != null)
+        if (actionPane != null && widget.shouldClipActions)
           Positioned.fill(
             child: ClipRect(
               clipper: _SlidableClipper(
@@ -264,7 +275,9 @@ class _SlidableState extends State<Slidable>
               ),
               child: actionPane,
             ),
-          ),
+          )
+        else if (actionPane != null)
+          Positioned.fill(child: actionPane!),
         content,
       ],
     );
@@ -315,10 +328,8 @@ class _SlidableControllerScope extends InheritedWidget {
 }
 
 class _SlidableClipper extends CustomClipper<Rect> {
-  _SlidableClipper({
-    required this.axis,
-    required this.controller,
-  }) : super(reclip: controller.animation);
+  _SlidableClipper({required this.axis, required this.controller})
+    : super(reclip: controller.animation);
 
   final Axis axis;
   final SlidableController controller;
